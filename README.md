@@ -9,9 +9,6 @@ docker compose exec app php artisan migrate
 3 url
 http://localhost:8000
 
-4 instalar node
-docker compose exec app npm install
-
 5 vite
 docker compose exec app npm run dev
 
@@ -26,3 +23,9 @@ docker compose up -d
 
 9 cualquier comando en bash
 docker compose exec app
+
+10 migracion
+docker compose exec app php artisan migrate:generate
+
+11 modelo
+docker compose exec app php artisan code:models --table=usuarios
