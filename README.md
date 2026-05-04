@@ -131,9 +131,3 @@ docker compose exec app npm run build
 ---
 
 ---
-
-## ✅ ¿Cómo aplicar este archivo?
-
-1. Crea o sobrescribe el archivo `README.md` en la raíz del proyecto  
-2. Pega este contenido  
-3. Listo 🚀
