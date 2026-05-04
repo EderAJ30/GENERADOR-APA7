@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use App\Models\Referencia;
+use App\Models\Autor;
+use App\Models\Materia;
+use App\Models\Tema;
+use App\Models\Editorial;
+use App\Models\TiposReferencia;
+use App\Models\ReferenciaAutor;
+
+class ReferenciaController extends Controller
+{
+  public function index(): View
+  {
+    $referencias = Referencia::with([
+      'tipo_referencia',
+      'editorial.pais',
+      'referencia_autores.autor',
+      'materias',
+      'temas'
+    ])->latest('created_at')->paginate(8);
+
+    $catalogos = [
+      'tipos'       => TiposReferencia::all(),
+      'autores'     => Autor::orderBy('apellidos')->get(),
+      'editoriales' => Editorial::orderBy('nombre')->get(),
+      'materias'    => Materia::orderBy('nombre')->get(),
+      'temas'       => Tema::orderBy('nombre')->get(),
+    ];
+
+    return view('referencias.index', compact('referencias', 'catalogos'));
+  }
+
+  public function store(Request $request): RedirectResponse
+  {
+    $validated = $request->validate([
+      'titulo'             => 'required|string|max:255',
+      'id_tipo_referencia' => 'required|integer|exists:tipos_referencia,id_tipo_referencia',
+      'anio_publicacion'   => 'required|integer|min:1500|max:' . (date('Y') + 1),
+      'fecha_exacta'       => 'nullable|date',
+      'volumen'            => 'nullable|string|max:20',
+      'numero'             => 'nullable|string|max:20',
+      'paginas'            => 'nullable|string|max:50',
+      'editorial'          => 'nullable|string|max:150',
+      'autores_text'       => 'required|string',
+      'temas_text'         => 'nullable|string',
+      'isbn_issn'          => 'nullable|string|max:20',
+      'doi'                => 'nullable|string|max:100|unique:referencias,doi',
+      'url'                => 'nullable|url|max:500',
+      'resumen'            => 'nullable|string',
+      'materias'           => 'required|array|min:1',
+      'materias.*'         => 'integer|exists:materias,id_materia',
+    ]);
+
+    $validated['id_usuario'] = 1;
+
+    DB::beginTransaction();
+    try {
+      $id_editorial = null;
+      if (!empty($request->editorial)) {
+        $editorialModel = Editorial::firstOrCreate(['nombre' => trim($request->editorial)]);
+        $id_editorial = $editorialModel->id_editorial;
+      }
+
+      $referencia = Referencia::create([
+        'titulo' => $validated['titulo'],
+        'id_tipo_referencia' => $validated['id_tipo_referencia'],
+        'anio_publicacion' => $validated['anio_publicacion'],
+        'fecha_exacta' => $validated['fecha_exacta'] ?? null,
+        'id_editorial' => $id_editorial,
+        'volumen' => $validated['volumen'] ?? null,
+        'numero' => $validated['numero'] ?? null,
+        'paginas' => $validated['paginas'] ?? null,
+        'isbn_issn' => $validated['isbn_issn'] ?? null,
+        'doi' => $validated['doi'] ?? null,
+        'url' => $validated['url'] ?? null,
+        'resumen' => $validated['resumen'] ?? null,
+        'id_usuario' => $validated['id_usuario'],
+      ]);
+
+      $autoresArray = array_filter(array_map('trim', explode(',', $request->autores_text)));
+
+      $autoresVinculados = [];
+      $ordenAPA = 1;
+
+      foreach ($autoresArray as $autorNombreCompleto) {
+        $partes = explode(' ', $autorNombreCompleto, 2);
+        $apellidos = $partes[0];
+        $nombre = $partes[1] ?? '';
+
+        $autor = Autor::firstOrCreate([
+          'apellidos' => $apellidos,
+          'nombre' => $nombre
+        ]);
+
+        if (!in_array($autor->id_autor, $autoresVinculados)) {
+          ReferenciaAutor::create([
+            'id_referencia' => $referencia->id_referencia,
+            'id_autor'      => $autor->id_autor,
+            'orden'         => $ordenAPA,
+          ]);
+
+          $autoresVinculados[] = $autor->id_autor;
+          $ordenAPA++;
+        }
+      }
+
+      if (!empty($request->temas_text)) {
+        $temasArray = array_filter(array_map('trim', explode(',', $request->temas_text)));
+        $temasIds = [];
+        foreach ($temasArray as $temaStr) {
+          $tema = Tema::firstOrCreate(['nombre' => $temaStr]);
+          $temasIds[] = $tema->id_tema;
+        }
+        $referencia->temas()->sync($temasIds);
+      }
+
+      $referencia->materias()->syncWithPivotValues($request->materias, ['tipo_bibliografia' => 'basica']);
+
+      DB::commit();
+      return redirect()->route('referencias.index')->with('success', 'Referencia guardada correctamente.');
+    } catch (\Exception $e) {
+      DB::rollBack();
+      throw $e;
+    }
+  }
+
+  public function destroy($id): RedirectResponse
+  {
+    DB::beginTransaction();
+
+    try {
+      $referencia = Referencia::findOrFail($id);
+
+      $referencia->temas()->detach();
+      $referencia->materias()->detach();
+
+      ReferenciaAutor::where('id_referencia', $id)->delete();
+
+      foreach ($referencia->archivos as $archivo) {
+        if (Storage::disk('public')->exists($archivo->ruta)) {
+          Storage::disk('public')->delete($archivo->ruta);
+        }
+        $archivo->delete();
+      }
+
+      $referencia->delete();
+
+      DB::commit();
+
+      return redirect()->route('referencias.index')
+        ->with('success', 'La referencia y sus datos asociados han sido eliminados correctamente.');
+    } catch (\Exception $e) {
+      DB::rollBack();
+
+      Log::error('Error al eliminar referencia: ' . $e->getMessage());
+
+      return redirect()->route('referencias.index')
+        ->withErrors(['error' => 'Ocurrió un problema al intentar eliminar la referencia. Verifica los registros del sistema.']);
+    }
+  }
+}

@@ -19,22 +19,22 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * 
- * @property Collection|Editoriale[] $editoriales
+ * @property Collection|Editorial[] $editoriales
  *
  * @package App\Models
  */
-class Paise extends Model
+class Pais extends Model
 {
-	protected $table = 'paises';
-	protected $primaryKey = 'id_pais';
+  protected $table = 'paises';
+  protected $primaryKey = 'id_pais';
 
-	protected $fillable = [
-		'nombre',
-		'codigo_iso'
-	];
+  protected $fillable = [
+    'nombre',
+    'codigo_iso'
+  ];
 
-	public function editoriales()
-	{
-		return $this->hasMany(Editoriale::class, 'id_pais');
-	}
+  public function editoriales()
+  {
+    return $this->hasMany(Editorial::class, 'id_pais');
+  }
 }

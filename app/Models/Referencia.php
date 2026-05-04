@@ -32,11 +32,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon $updated_at
  * @property string|null $deleted_at
  * 
- * @property Editoriale|null $editoriale
- * @property TiposReferencium $tipos_referencium
+ * @property Editorial|null $editorial
+ * @property TiposReferencia $tipos_referencia
  * @property Usuario $usuario
  * @property Collection|Archivo[] $archivos
- * @property Collection|Coleccione[] $colecciones
+ * @property Collection|Coleccion[] $coleccion
  * @property Collection|Materia[] $materias
  * @property Collection|ReferenciaAutor[] $referencia_autors
  * @property Collection|Tema[] $temas
@@ -45,72 +45,72 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Referencia extends Model
 {
-	use SoftDeletes;
-	protected $table = 'referencias';
-	protected $primaryKey = 'id_referencia';
+  use SoftDeletes;
+  protected $table = 'referencias';
+  protected $primaryKey = 'id_referencia';
 
-	protected $casts = [
-		'id_tipo_referencia' => 'int',
-		'id_usuario' => 'int',
-		'id_editorial' => 'int',
-		'anio_publicacion' => 'int',
-		'fecha_exacta' => 'datetime'
-	];
+  protected $casts = [
+    'id_tipo_referencia' => 'int',
+    'id_usuario' => 'int',
+    'id_editorial' => 'int',
+    'anio_publicacion' => 'int',
+    'fecha_exacta' => 'datetime'
+  ];
 
-	protected $fillable = [
-		'id_tipo_referencia',
-		'id_usuario',
-		'id_editorial',
-		'titulo',
-		'anio_publicacion',
-		'fecha_exacta',
-		'volumen',
-		'numero',
-		'paginas',
-		'isbn_issn',
-		'doi',
-		'url',
-		'resumen'
-	];
+  protected $fillable = [
+    'id_tipo_referencia',
+    'id_usuario',
+    'id_editorial',
+    'titulo',
+    'anio_publicacion',
+    'fecha_exacta',
+    'volumen',
+    'numero',
+    'paginas',
+    'isbn_issn',
+    'doi',
+    'url',
+    'resumen'
+  ];
 
-	public function editoriale()
-	{
-		return $this->belongsTo(Editoriale::class, 'id_editorial');
-	}
+  public function editorial()
+  {
+    return $this->belongsTo(Editorial::class, 'id_editorial');
+  }
 
-	public function tipos_referencium()
-	{
-		return $this->belongsTo(TiposReferencium::class, 'id_tipo_referencia');
-	}
+  public function tipo_referencia()
+  {
+    return $this->belongsTo(TiposReferencia::class, 'id_tipo_referencia');
+  }
 
-	public function usuario()
-	{
-		return $this->belongsTo(Usuario::class, 'id_usuario');
-	}
+  public function usuario()
+  {
+    return $this->belongsTo(Usuario::class, 'id_usuario');
+  }
 
-	public function archivos()
-	{
-		return $this->hasMany(Archivo::class, 'id_referencia');
-	}
+  public function archivos()
+  {
+    return $this->hasMany(Archivo::class, 'id_referencia');
+  }
 
-	public function colecciones()
-	{
-		return $this->hasMany(Coleccione::class, 'id_referencia');
-	}
+  public function colecciones()
+  {
+    return $this->hasMany(Coleccion::class, 'id_referencia');
+  }
 
-	public function materias()
-	{
-		return $this->belongsToMany(Materia::class, 'materia_referencia', 'id_referencia', 'id_materia')
-					->withPivot('tipo_bibliografia');
-	}
+  public function materias()
+  {
+    return $this->belongsToMany(Materia::class, 'materia_referencia', 'id_referencia', 'id_materia')
+      ->withPivot('tipo_bibliografia');
+  }
 
-	public function referencia_autors()
-	{
-		return $this->hasMany(ReferenciaAutor::class, 'id_referencia');
-	}
+  public function referencia_autores()
+  {
+    return $this->hasMany(ReferenciaAutor::class, 'id_referencia');
+  }
 
-	public function temas()
-	{
-		return $this->belongsToMany(Tema::class, 'referencia_tema', 'id_referencia', 'id_tema');
-	}
+  public function temas()
+  {
+    return $this->belongsToMany(Tema::class, 'referencia_tema', 'id_referencia', 'id_tema');
+  }
 }

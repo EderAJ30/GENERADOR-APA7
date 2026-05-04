@@ -22,17 +22,17 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class TiposReferencium extends Model
+class TiposReferencia extends Model
 {
-	protected $table = 'tipos_referencia';
-	protected $primaryKey = 'id_tipo_referencia';
+  protected $table = 'tipos_referencia';
+  protected $primaryKey = 'id_tipo_referencia';
 
-	protected $fillable = [
-		'nombre'
-	];
+  protected $fillable = [
+    'nombre'
+  ];
 
-	public function referencias()
-	{
-		return $this->hasMany(Referencia::class, 'id_tipo_referencia');
-	}
+  public function referencias()
+  {
+    return $this->hasMany(Referencia::class, 'id_tipo_referencia');
+  }
 }

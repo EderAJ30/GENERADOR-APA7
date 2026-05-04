@@ -24,27 +24,29 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ReferenciaAutor extends Model
 {
-	protected $table = 'referencia_autor';
-	public $incrementing = false;
-	public $timestamps = false;
+  protected $table = 'referencia_autor';
+  public $incrementing = false;
+  public $timestamps = false;
 
-	protected $casts = [
-		'id_referencia' => 'int',
-		'id_autor' => 'int',
-		'orden' => 'int'
-	];
+  protected $casts = [
+    'id_referencia' => 'int',
+    'id_autor' => 'int',
+    'orden' => 'int'
+  ];
 
-	protected $fillable = [
-		'orden'
-	];
+  protected $fillable = [
+    'id_referencia',
+    'id_autor',
+    'orden'
+  ];
 
-	public function autore()
-	{
-		return $this->belongsTo(Autore::class, 'id_autor');
-	}
+  public function autor()
+  {
+    return $this->belongsTo(Autor::class, 'id_autor');
+  }
 
-	public function referencia()
-	{
-		return $this->belongsTo(Referencia::class, 'id_referencia');
-	}
+  public function referencia()
+  {
+    return $this->belongsTo(Referencia::class, 'id_referencia');
+  }
 }

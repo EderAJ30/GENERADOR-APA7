@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Class Autore
+ * Class Autores
  * 
  * @property int $id_autor
  * @property string $nombre
@@ -23,18 +23,18 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class Autore extends Model
+class Autor extends Model
 {
-	protected $table = 'autores';
-	protected $primaryKey = 'id_autor';
+  protected $table = 'autores';
+  protected $primaryKey = 'id_autor';
 
-	protected $fillable = [
-		'nombre',
-		'apellidos'
-	];
+  protected $fillable = [
+    'nombre',
+    'apellidos'
+  ];
 
-	public function referencia_autors()
-	{
-		return $this->hasMany(ReferenciaAutor::class, 'id_autor');
-	}
+  public function referencia_autores()
+  {
+    return $this->hasMany(ReferenciaAutor::class, 'id_autor');
+  }
 }

@@ -29,3 +29,10 @@ docker compose exec app php artisan migrate:generate
 
 11 modelo
 docker compose exec app php artisan code:models --table=usuarios
+
+12
+docker compose exec app npm install
+docker compose exec app npm run dev
+
+INSERT INTO usuarios (nombre_usuario, paterno_usuario, materno_usuario, email, password)
+VALUES ('eder', 'avalos', 'juarez', 'ederaj30@gmail.com', '1234');

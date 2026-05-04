@@ -20,33 +20,33 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * 
- * @property Paise|null $paise
+ * @property Pais|null $paise
  * @property Collection|Referencia[] $referencias
  *
  * @package App\Models
  */
-class Editoriale extends Model
+class Editorial extends Model
 {
-	protected $table = 'editoriales';
-	protected $primaryKey = 'id_editorial';
+  protected $table = 'editoriales';
+  protected $primaryKey = 'id_editorial';
 
-	protected $casts = [
-		'id_pais' => 'int'
-	];
+  protected $casts = [
+    'id_pais' => 'int'
+  ];
 
-	protected $fillable = [
-		'id_pais',
-		'nombre',
-		'ciudad_sede'
-	];
+  protected $fillable = [
+    'id_pais',
+    'nombre',
+    'ciudad_sede'
+  ];
 
-	public function paise()
-	{
-		return $this->belongsTo(Paise::class, 'id_pais');
-	}
+  public function pais()
+  {
+    return $this->belongsTo(Pais::class, 'id_pais');
+  }
 
-	public function referencias()
-	{
-		return $this->hasMany(Referencia::class, 'id_editorial');
-	}
+  public function referencias()
+  {
+    return $this->hasMany(Referencia::class, 'id_editorial');
+  }
 }

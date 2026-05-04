@@ -22,17 +22,17 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class Role extends Model
+class Rol extends Model
 {
-	protected $table = 'roles';
-	protected $primaryKey = 'id_rol';
+  protected $table = 'roles';
+  protected $primaryKey = 'id_rol';
 
-	protected $fillable = [
-		'nombre'
-	];
+  protected $fillable = [
+    'nombre'
+  ];
 
-	public function usuarios()
-	{
-		return $this->hasMany(Usuario::class, 'rol_id');
-	}
+  public function usuarios()
+  {
+    return $this->hasMany(Usuario::class, 'rol_id');
+  }
 }
