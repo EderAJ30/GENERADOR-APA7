@@ -1,6 +1,6 @@
 # 🚀 Generador APA7: Laravel + Docker
 
-Este repositorio contiene el entorno de desarrollo contenedorizado para el proyecto **Generador-APA7**. La arquitectura se basa en microservicios aislados para garantizar la paridad entre entornos de desarrollo (Fedora/macOS).
+Este repositorio contiene el entorno de desarrollo contenedorizado para el proyecto **Generador-APA7**. La arquitectura se basa en microservicios aislados para garantizar la paridad entre entornos de desarrollo jeje
 
 ---
 
@@ -24,6 +24,14 @@ Este repositorio contiene el entorno de desarrollo contenedorizado para el proye
 ## 🏁 Configuración Inicial
 
 Sigue estos pasos para levantar el entorno desde cero:
+
+### Git CLone
+
+```bash
+git clone https://github.com/EderAJ30/GENERADOR-APA7.git
+```
+
+---
 
 ### 1. Despliegue de Contenedores
 
@@ -105,6 +113,11 @@ docker compose up -d
 
 ```bash
 docker compose exec app php artisan optimize:clear
+docker compose exec app composer dump-autoload
+docker compose exec app php artisan config:cache
+docker compose exec app php artisan route:cache
+docker compose exec app php artisan view:clear
+docker compose exec app php artisan cache:clear
 ```
 
 ---
@@ -116,12 +129,6 @@ docker compose exec app npm run build
 ```
 
 ---
-
-## 📝 Notas de Ingeniería
-
-- **Seguridad:** El puerto `3306` está expuesto para facilitar el uso de clientes GUI (como TablePlus o DBeaver). Evita exponerlo en staging/producción.  
-- **Mantenibilidad:** Se recomienda usar `docker compose exec` en lugar de `docker run` para mantener consistencia dentro de la red del proyecto.  
-- **Entorno:** Configurado para flujos de trabajo en **Fedora** y **macOS**.
 
 ---
 
