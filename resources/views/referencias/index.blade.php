@@ -150,7 +150,6 @@
             </td>
             <td class="p-5 flex justify-end gap-2 align-top">
 
-              <!-- 1. Botón Ver Detalles (Formatos) -->
               <button onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')" class="p-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition border border-blue-500/20" title="Ver Formatos">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -158,14 +157,12 @@
                 </svg>
               </button>
 
-              <!-- 2. Botón Editar -->
-              <button class="p-2 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg transition border border-white/10" title="Editar">
+              <button onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')" class="p-2 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg transition border border-white/10" title="Editar">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
               </button>
 
-              <!-- 3. Botón Eliminar -->
               <button onclick="toggleModal('modal-delete-{{ $ref->id_referencia }}')" class="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition border border-red-500/20" title="Eliminar">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -419,6 +416,107 @@
         <button type="submit" class="w-full h-full px-4 py-3 text-white bg-red-600 hover:bg-red-500 border border-red-500 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.3)] transition">Sí, eliminar</button>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DE EDICIÓN -->
+<div id="modal-edit-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')"></div>
+
+  <div class="relative w-full max-w-4xl bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+      <h3 class="text-xl font-bold text-white">Editar Referencia</h3>
+      <button onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')" class="text-slate-400 hover:text-white transition p-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    @php
+    $autoresString = $ref->referencia_autores->sortBy('orden')->map(function($ra) {
+    return trim($ra->autor->apellidos . ' ' . $ra->autor->nombre);
+    })->implode(', ');
+
+    $temasString = $ref->temas->pluck('nombre')->implode(', ');
+
+    $materiasIds = $ref->materias->pluck('id_materia')->toArray();
+    @endphp
+
+    <form action="{{ route('referencias.update', $ref->id_referencia) }}" method="POST" class="overflow-y-auto custom-scrollbar flex-1">
+      @csrf
+      @method('PUT')
+
+      <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Título de la Obra *</label>
+          <input type="text" name="titulo" value="{{ old('titulo', $ref->titulo) }}" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Autores * <span class="normal-case font-normal text-slate-500">(Separados por coma: Apellidos Nombre)</span></label>
+          <input type="text" name="autores_text" value="{{ old('autores_text', $autoresString) }}" placeholder="Ej. Pressman Roger, Sommerville Ian" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipo de Referencia *</label>
+          <select name="id_tipo_referencia" required class="w-full bg-[#0d1117] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition appearance-none">
+            @foreach($catalogos['tipos'] as $tipo)
+            <option value="{{ $tipo->id_tipo_referencia }}" {{ (old('id_tipo_referencia', $ref->id_tipo_referencia) == $tipo->id_tipo_referencia) ? 'selected' : '' }}>
+              {{ $tipo->nombre }}
+            </option>
+            @endforeach
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Año *</label>
+          <input type="number" name="anio_publicacion" value="{{ old('anio_publicacion', $ref->anio_publicacion) }}" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Editorial</label>
+          <input type="text" name="editorial" value="{{ old('editorial', $ref->editorial->nombre ?? '') }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">DOI</label>
+          <input type="text" name="doi" value="{{ old('doi', $ref->doi) }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">URL Web</label>
+          <input type="url" name="url" value="{{ old('url', $ref->url) }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Temas (Keywords)</label>
+          <input type="text" name="temas_text" value="{{ old('temas_text', $temasString) }}" placeholder="Ej. Ingeniería, Software, Agile" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Materias *</label>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
+            @foreach($catalogos['materias'] as $materia)
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="checkbox" name="materias[]" value="{{ $materia->id_materia }}"
+                {{ in_array($materia->id_materia, old('materias', $materiasIds)) ? 'checked' : '' }}
+                class="form-checkbox h-4 w-4 text-blue-500 rounded border-white/20 bg-black/50 focus:ring-blue-500 focus:ring-offset-gray-900">
+              <span class="text-sm text-slate-300">{{ $materia->nombre }}</span>
+            </label>
+            @endforeach
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-6 border-t border-white/10 bg-white/5 rounded-b-2xl flex justify-end gap-3 shrink-0">
+        <button type="button" onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')" class="px-6 py-2 text-slate-400 hover:text-white transition">Cancelar</button>
+        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-[0_0_15px_rgba(37,99,235,0.3)]">Guardar Cambios</button>
+      </div>
+    </form>
   </div>
 </div>
 
