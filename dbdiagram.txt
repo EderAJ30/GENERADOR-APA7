@@ -1,0 +1,131 @@
+Considere que la Base de Datos es para una aplicación CRUD que además permita consultar literatura formal 
+afín a las Ciencias e Ingeniería en Computación y generar los respectivos formatos especialmente APA 7, IEEE, 
+ACM y adicional Chicago, Harvard, etc.
+
+CODIGO DBDIAGRAM JEJE
+
+Table roles {
+  id_rol int [pk, increment]
+  nombre varchar(50) [not null, unique]
+}
+
+Table usuarios {
+  id_usuario int [pk, increment]
+  id_rol int [ref: > roles.id_rol, not null]
+  nombre varchar(100) [not null]
+  correo varchar(255) [not null, unique]
+  contrasena varchar(255) [not null]
+  created_at timestamp
+  deleted_at timestamp 
+}
+
+Table areas {
+  id_area int [pk, increment]
+  nombre varchar(100) [not null, unique]
+}
+
+Table materias {
+  id_materia int [pk, increment]
+  id_area int [ref: > areas.id_area, not null]
+  nombre varchar(100) [not null]
+  semestre tinyint [not null] 
+}
+
+Table paises {
+  id_pais int [pk, increment]
+  nombre varchar(100) [not null, unique]
+  codigo_iso varchar(5)
+}
+
+Table editoriales {
+  id_editorial int [pk, increment]
+  id_pais int [ref: > paises.id_pais, null]
+  nombre varchar(150) [not null]
+  ciudad_sede varchar(100) [null]
+}
+
+Table tipos_referencia {
+  id_tipo_referencia int [pk, increment]
+  nombre varchar(50) [not null, unique] 
+}
+
+Table referencias {
+  id_referencia int [pk, increment]
+  id_tipo_referencia int [ref: > tipos_referencia.id_tipo_referencia, not null]
+  id_usuario int [ref: > usuarios.id_usuario, not null]
+  id_editorial int [ref: > editoriales.id_editorial, null]
+  titulo varchar(255) [not null]
+  anio_publicacion smallint [not null]
+  fecha_exacta date [null]
+  volumen varchar(20) [null]
+  numero varchar(20) [null]
+  paginas varchar(50) [null]
+  isbn_issn varchar(20) [null]
+  doi varchar(100) [null, unique]
+  url varchar(500) [null]
+  resumen text [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+
+  indexes {
+    titulo
+  }
+}
+
+Table temas {
+  id_tema int [pk, increment]
+  nombre varchar(100) [not null, unique]
+}
+
+Table referencia_tema {
+  id_referencia int [ref: > referencias.id_referencia]
+  id_tema int [ref: > temas.id_tema]
+
+  indexes {
+    (id_referencia, id_tema) [pk]
+  }
+}
+
+Table materia_referencia {
+  id_materia int [ref: > materias.id_materia]
+  id_referencia int [ref: > referencias.id_referencia]
+  tipo_bibliografia varchar(20) [not null, default: 'basica'] 
+  
+  indexes {
+    (id_materia, id_referencia) [pk]
+  }
+}
+
+Table autores {
+  id_autor int [pk, increment]
+  nombre varchar(100) [not null]
+  apellidos varchar(150) [not null]
+}
+
+Table referencia_autor {
+  id_referencia int [ref: > referencias.id_referencia]
+  id_autor int [ref: > autores.id_autor]
+  orden tinyint [not null, default: 1]
+
+  indexes {
+    (id_referencia, id_autor) [pk]
+  }
+}
+
+Table archivos {
+  id_archivo int [pk, increment]
+  id_referencia int [ref: > referencias.id_referencia, not null]
+  nombre_archivo varchar(255) [not null]
+  ruta_storage varchar(500) [not null, unique]
+  formato varchar(10) [not null, default: 'pdf']
+  tamano_bytes bigint [not null]
+}
+
+Table colecciones {
+  id_coleccion int [pk, increment]
+  id_usuario int [ref: > usuarios.id_usuario, not null]
+  id_referencia int [ref: > referencias.id_referencia, not null]
+  fecha_agregado timestamp [not null]
+  comentario_personal text [null]
+}
