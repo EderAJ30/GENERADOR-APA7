@@ -58,10 +58,10 @@ docker compose exec app php artisan key:generate
 
 ---
 
-### 3. Persistencia de Datos
+### 3. ejecutar migraciones (base de datos) y Seeders
 
 ```bash
-docker compose exec app php artisan migrate --seed
+docker compose exec app php artisan migrate:fresh --seed
 ```
 
 ---
