@@ -99,8 +99,13 @@
   <div class="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
 
     <div class="p-6 border-b border-white/5 flex flex-wrap gap-4 bg-white/5">
-      <input type="text" placeholder="Buscar por título, autor o DOI..."
-        class="flex-1 min-w-[300px] bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+      <form action="{{ route('referencias.index') }}" method="GET" class="flex-1 min-w-[300px]">
+        <input type="text"
+          name="search"
+          value="{{ request('search') }}"
+          placeholder="Buscar por título, autor o DOI..."
+          class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+      </form>
     </div>
 
     <div class="overflow-x-auto">
@@ -119,9 +124,25 @@
               <div class="leading-relaxed">
                 <!-- APA 7 Preview -->
                 <span class="text-blue-300 font-medium">
-                  @foreach($ref->referencia_autores->sortBy('orden') as $ra)
-                  {{ $ra->autor->apellidos }}, {{ substr($ra->autor->nombre, 0, 1) }}.@if(!$loop->last), @endif
-                  @endforeach
+                  @php
+                  $autoresPreview = $ref->referencia_autores->sortBy('orden')->values();
+                  $totalPreview = $autoresPreview->count();
+                  $arrPreview = [];
+
+                  foreach($autoresPreview as $idx => $ra) {
+                  $nombreStr = $ra->autor->apellidos . ', ' . substr($ra->autor->nombre, 0, 1) . '.';
+
+                  if ($totalPreview > 1 && $idx === $totalPreview - 1) {
+                  $arrPreview[] = '& ' . $nombreStr;
+                  } else {
+                  $arrPreview[] = $nombreStr;
+                  }
+                  }
+
+                  $cadenaAutores = implode($totalPreview > 2 ? ', ' : ' ', $arrPreview);
+                  @endphp
+
+                  {{ $cadenaAutores }}
                 </span>
                 <span class="text-slate-400">({{ $ref->anio_publicacion }}).</span>
                 <span class="italic text-slate-100">{{ $ref->titulo }}</span>.
@@ -319,7 +340,7 @@
 
 <!-- FIN DE LA TABLA -->
 
-<!-- ZONA DE MODALES (Fuera del contexto de apilamiento de la tabla) -->
+<!-- ZONA DE MODALES -->
 @foreach($referencias as $ref)
 
 <!-- MODAL DE CITACIÓN -->
@@ -343,44 +364,88 @@
     <!-- Cuerpo con Scroll -->
     <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
       @php
-      $autoresAPA = $ref->referencia_autores->sortBy('orden')->map(function($ra) {
-      return $ra->autor->apellidos . ", " . substr($ra->autor->nombre, 0, 1) . ".";
-      })->implode(', ');
+      $autores = $ref->referencia_autores->sortBy('orden')->values();
+      $total = $autores->count();
+      $arrAPA = [];
+      $arrIEEE = [];
 
-      $autoresIEEE = $ref->referencia_autores->sortBy('orden')->map(function($ra) {
-      return substr($ra->autor->nombre, 0, 1) . ". " . $ra->autor->apellidos;
-      })->implode(', ');
+      foreach($autores as $idx => $ra) {
+      $nombreAPA = $ra->autor->apellidos . ', ' . substr($ra->autor->nombre, 0, 1) . '.';
+      $nombreIEEE = substr($ra->autor->nombre, 0, 1) . '. ' . $ra->autor->apellidos;
+
+      if ($total > 1 && $idx === $total - 1) {
+      $arrAPA[] = '& ' . $nombreAPA;
+      $arrIEEE[] = 'and ' . $nombreIEEE;
+      } else {
+      $arrAPA[] = $nombreAPA;
+      $arrIEEE[] = $nombreIEEE;
+      }
+      }
+
+      $autoresAPA = implode($total > 2 ? ', ' : ' ', $arrAPA);
+      $autoresIEEE = implode(', ', $arrIEEE);
+
+      $tipoSlug = Str::slug($ref->tipo_referencia->nombre ?? 'libro');
       @endphp
 
-      <!-- APA 7 -->
       <div class="space-y-2">
-        <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">APA 7th Edition</span><button onclick="copyToClipboard('apa-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button></div>
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">APA 7th Edition</span>
+          <button onclick="copyToClipboard('apa-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button>
+        </div>
         <div id="apa-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
-          {{ $autoresAPA }} ({{ $ref->anio_publicacion }}). <span class="italic text-white">{{ $ref->titulo }}</span>. @if($ref->editorial){{ $ref->editorial->nombre }}.@endif {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
+          @if($tipoSlug === 'libro')
+          {{ $autoresAPA }} ({{ $ref->anio_publicacion }}). <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }} {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
+          @else
+          {{ $autoresAPA }} ({{ $ref->anio_publicacion }}). {{ $ref->titulo ?? '[Título no disponible]' }}. <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista no especificada]' }}</span>{!! $ref->volumen ? ', <span class="italic">'.$ref->volumen.'</span>' : '' !!}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', ' . $ref->paginas : '' }}. {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
+          @endif
         </div>
       </div>
 
-      <!-- IEEE (Ingeniería) -->
       <div class="space-y-2">
-        <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">IEEE Style (Engineering)</span><button onclick="copyToClipboard('ieee-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button></div>
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">IEEE Style (Engineering)</span>
+          <button onclick="copyToClipboard('ieee-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button>
+        </div>
         <div id="ieee-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
-          {{ $autoresIEEE }}, "{{ $ref->titulo }}," @if($ref->editorial)<i>{{ $ref->editorial->nombre }}</i>, @endif {{ $ref->anio_publicacion }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
+          @if($tipoSlug === 'libro')
+          {{ $autoresIEEE }}, <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
+          @else
+          {{ $autoresIEEE }}, "{{ $ref->titulo ?? '[Título no disponible]' }}," <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', vol. ' . $ref->volumen : '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}, {{ $ref->anio_publicacion }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
+          @endif
         </div>
       </div>
 
-      <!-- Chicago -->
       <div class="space-y-2">
-        <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Chicago Style</span><button onclick="copyToClipboard('chicago-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button></div>
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Chicago Style</span>
+          <button onclick="copyToClipboard('chicago-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button>
+        </div>
         <div id="chicago-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
-          {{ $autoresAPA }}. "{{ $ref->titulo }}." @if($ref->editorial){{ $ref->editorial->nombre }}, @endif {{ $ref->anio_publicacion }}.
+          @if($tipoSlug === 'libro')
+          {{ $autoresAPA }}. <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion }}.
+          @else
+          {{ $autoresAPA }}. "{{ $ref->titulo ?? '[Título no disponible]' }}." <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span> {{ $ref->volumen ?? '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }} ({{ $ref->anio_publicacion }}){{ $ref->paginas ? ': ' . $ref->paginas : '' }}.
+          @endif
         </div>
       </div>
 
-      <!-- Harvard -->
       <div class="space-y-2">
-        <div class="flex justify-between items-center"><span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Harvard Style</span><button onclick="copyToClipboard('harvard-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button></div>
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Harvard Style</span>
+          <button onclick="copyToClipboard('harvard-{{ $ref->id_referencia }}')" class="text-blue-500 text-xs font-bold hover:text-blue-400">COPIAR</button>
+        </div>
         <div id="harvard-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
-          {{ $ref->referencia_autores->sortBy('orden')->first()->autor->apellidos ?? 'N.N' }}, {{ substr($ref->referencia_autores->sortBy('orden')->first()->autor->nombre ?? '', 0, 1) }}. ({{ $ref->anio_publicacion }}) '{{ $ref->titulo }}'. @if($ref->editorial){{ $ref->editorial->nombre }}.@endif
+          @php
+          $primerAutor = $autores->first();
+          $apellidoHarvard = $primerAutor->autor->apellidos ?? 'N.N';
+          $inicialHarvard = isset($primerAutor->autor->nombre) ? substr($primerAutor->autor->nombre, 0, 1) . '.' : '';
+          @endphp
+          @if($tipoSlug === 'libro')
+          {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion }}) <span class="italic text-white">'{{ $ref->titulo }}'</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }}
+          @else
+          {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion }}) '{{ $ref->titulo }}', <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', ' . $ref->volumen : '' }}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}.
+          @endif
         </div>
       </div>
     </div>
@@ -391,7 +456,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- MODAL DE ELIMINAR (Con Formulario Activo) -->
 <div id="modal-delete-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">

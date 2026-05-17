@@ -29,14 +29,15 @@
   </main>
 
   <footer class="mt-auto py-8 border-t border-white/5 bg-black/20 backdrop-blur-sm">
-    <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-500 uppercase tracking-widest">
-      <p class="mb-6">&copy; {{ date('Y') }} Referencias ICO - Equipo 1</p>
-      
-      <ul class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <li>- Avalos Juarez Eder</li>
-        <li>- Hernandez Ruiz Paula Mabel</li>
-        <li>- Lara Martinez Christian Gael</li>
-        <li>- Maldonado Amaro Jorge Mauricio</li>
+    <div class="max-w-4xl mx-auto px-4 text-center text-slate-500 uppercase tracking-widest">
+      <p class="mb-6 text-xs">&copy; {{ date('Y') }} Referencias ICO - Equipo 1</p>
+
+      <ul class="flex flex-wrap justify-center gap-x-8 gap-y-3 text-[10px]">
+        <li>Avalos Juarez Eder</li>
+        <li>Hernandez Ruiz Paula Mabel</li>
+        <li>Lara Martinez Christian Gael</li>
+        <li>Maldonado Amaro Jorge Mauricio</li>
+        <li>Jaimes Ruiz Xchel</li>
       </ul>
     </div>
   </footer>
