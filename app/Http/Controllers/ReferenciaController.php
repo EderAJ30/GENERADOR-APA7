@@ -15,38 +15,13 @@ use App\Models\Tema;
 use App\Models\Editorial;
 use App\Models\TiposReferencia;
 use App\Models\ReferenciaAutor;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use App\Models\Coleccion;
+use App\Models\Archivo;
 
 class ReferenciaController extends Controller
 {
-  /* 
-    SELECT * FROM `referencias` 
-    WHERE (
-        `titulo` LIKE '%computacion%' 
-        OR `doi` LIKE '%computacion%' 
-        OR EXISTS (
-            SELECT * FROM `referencia_autor` 
-            INNER JOIN `autores` ON `referencia_autor`.`id_autor` = `autores`.`id_autor` 
-            WHERE `referencias`.`id_referencia` = `referencia_autor`.`id_referencia` 
-            AND (
-                `autores`.`nombre` LIKE '%computacion%' 
-                OR `autores`.`apellidos` LIKE '%computacion%'
-            )
-        ) 
-        OR EXISTS (
-            SELECT * FROM `tipos_referencia` 
-            WHERE `referencias`.`id_tipo_referencia` = `tipos_referencia`.`id_tipo_referencia` 
-            AND `tipos_referencia`.`nombre` LIKE '%computacion%'
-        ) 
-        OR EXISTS (
-            SELECT * FROM `materias` 
-            INNER JOIN `materia_referencia` ON `materias`.`id_materia` = `materia_referencia`.`id_materia` 
-            WHERE `referencias`.`id_referencia` = `materia_referencia`.`id_referencia` 
-            AND `materias`.`nombre` LIKE '%computacion%'
-        )
-    ) 
-    ORDER BY `created_at` DESC 
-    LIMIT 8 OFFSET 0;
-  */
   public function index(Request $request): View
   {
     $search = trim($request->input('search'));
@@ -89,48 +64,31 @@ class ReferenciaController extends Controller
     return view('referencias.index', compact('referencias', 'catalogos', 'search'));
   }
 
-  /* 
-    SELECT 
-    r.id_referencia,
-    r.titulo,
-    r.anio_publicacion,
-    tr.nombre AS tipo,
-    e.nombre AS editorial,
-    GROUP_CONCAT(DISTINCT CONCAT(a.nombre, ' ', a.apellidos) SEPARATOR ', ') AS autores,
-    GROUP_CONCAT(DISTINCT t.nombre SEPARATOR ' | ') AS temas
-      FROM referencias r
-      JOIN tipos_referencia tr ON r.id_tipo_referencia = tr.id_tipo_referencia
-      LEFT JOIN editoriales e ON r.id_editorial = e.id_editorial
-      LEFT JOIN referencia_autor ra ON r.id_referencia = ra.id_referencia
-      LEFT JOIN autores a ON ra.id_autor = a.id_autor
-      LEFT JOIN referencia_tema rt ON r.id_referencia = rt.id_referencia
-      LEFT JOIN temas t ON rt.id_tema = t.id_tema
-      WHERE r.deleted_at IS NULL
-      GROUP BY r.id_referencia;
-  */
-
   public function store(Request $request): RedirectResponse
   {
     $validated = $request->validate([
-      'titulo'             => 'required|string|max:255',
-      'id_tipo_referencia' => 'required|integer|exists:tipos_referencia,id_tipo_referencia',
-      'anio_publicacion'   => 'required|integer|min:1500|max:' . (date('Y') + 1),
-      'fecha_exacta'       => 'nullable|date',
-      'volumen'            => 'nullable|string|max:20',
-      'numero'             => 'nullable|string|max:20',
-      'paginas'            => 'nullable|string|max:50',
-      'editorial'          => 'nullable|string|max:150',
-      'autores_text'       => 'required|string',
-      'temas_text'         => 'nullable|string',
-      'isbn_issn'          => 'nullable|string|max:20',
-      'doi'                => 'nullable|string|max:100|unique:referencias,doi',
-      'url'                => 'nullable|url|max:500',
-      'resumen'            => 'nullable|string',
-      'materias'           => 'required|array|min:1',
-      'materias.*'         => 'integer|exists:materias,id_materia',
+      'titulo'              => 'required|string|max:255',
+      'id_tipo_referencia'  => 'required|integer|exists:tipos_referencia,id_tipo_referencia',
+      'anio_publicacion'    => 'required|integer|min:1500|max:' . (date('Y') + 1),
+      'fecha_exacta'        => 'nullable|date',
+      'volumen'             => 'nullable|string|max:20',
+      'numero'              => 'nullable|string|max:20',
+      'paginas'             => 'nullable|string|max:50',
+      'editorial'           => 'nullable|string|max:150',
+      'autores_text'        => 'required|string',
+      'temas_text'          => 'nullable|string',
+      'isbn_issn'           => 'nullable|string|max:20',
+      'doi'                 => 'nullable|string|max:100|unique:referencias,doi',
+      'url'                 => 'nullable|url|max:500',
+      'resumen'             => 'nullable|string',
+      'materias'            => 'required|array|min:1',
+      'materias.*'          => 'integer|exists:materias,id_materia',
+      // Nuevas validaciones
+      'archivo'             => 'nullable|file|mimes:pdf|max:20480', // Máximo 20MB
+      'comentario_personal' => 'nullable|string|max:1000',
     ]);
 
-    $validated['id_usuario'] = 1;
+    $validated['id_usuario'] = Auth::id();
 
     DB::beginTransaction();
     try {
@@ -141,23 +99,23 @@ class ReferenciaController extends Controller
       }
 
       $referencia = Referencia::create([
-        'titulo' => $validated['titulo'],
+        'titulo'             => $validated['titulo'],
         'id_tipo_referencia' => $validated['id_tipo_referencia'],
-        'anio_publicacion' => $validated['anio_publicacion'],
-        'fecha_exacta' => $validated['fecha_exacta'] ?? null,
-        'id_editorial' => $id_editorial,
-        'volumen' => $validated['volumen'] ?? null,
-        'numero' => $validated['numero'] ?? null,
-        'paginas' => $validated['paginas'] ?? null,
-        'isbn_issn' => $validated['isbn_issn'] ?? null,
-        'doi' => $validated['doi'] ?? null,
-        'url' => $validated['url'] ?? null,
-        'resumen' => $validated['resumen'] ?? null,
-        'id_usuario' => $validated['id_usuario'],
+        'anio_publicacion'   => $validated['anio_publicacion'],
+        'fecha_exacta'       => $validated['fecha_exacta'] ?? null,
+        'id_editorial'       => $id_editorial,
+        'volumen'            => $validated['volumen'] ?? null,
+        'numero'             => $validated['numero'] ?? null,
+        'paginas'            => $validated['paginas'] ?? null,
+        'isbn_issn'          => $validated['isbn_issn'] ?? null,
+        'doi'                => $validated['doi'] ?? null,
+        'url'                => $validated['url'] ?? null,
+        'resumen'            => $validated['resumen'] ?? null,
+        'id_usuario'         => $validated['id_usuario'],
       ]);
 
+      // ... [Lógica intacta de autores, temas y materias] ...
       $autoresArray = array_filter(array_map('trim', explode(',', $request->autores_text)));
-
       $autoresVinculados = [];
       $ordenAPA = 1;
 
@@ -168,7 +126,7 @@ class ReferenciaController extends Controller
 
         $autor = Autor::firstOrCreate([
           'apellidos' => $apellidos,
-          'nombre' => $nombre
+          'nombre'    => $nombre
         ]);
 
         if (!in_array($autor->id_autor, $autoresVinculados)) {
@@ -195,23 +153,42 @@ class ReferenciaController extends Controller
 
       $referencia->materias()->syncWithPivotValues($request->materias, ['tipo_bibliografia' => 'basica']);
 
+      // --- NUEVA LÓGICA: Colección y Archivos ---
+
+      // 1. Vincular a la colección personal del usuario creador
+      Coleccion::create([
+        'id_usuario'          => $validated['id_usuario'],
+        'id_referencia'       => $referencia->id_referencia,
+        'comentario_personal' => $validated['comentario_personal'] ?? null,
+      ]);
+
+      // 2. Procesar y almacenar el archivo de forma segura
+      if ($request->hasFile('archivo') && $request->file('archivo')->isValid()) {
+        $file = $request->file('archivo');
+
+        // Se almacena en 'storage/app/referencias_archivos' (aislado de acceso público directo)
+        $ruta = $file->store('referencias_archivos', 'local');
+
+        Archivo::create([
+          'id_referencia'  => $referencia->id_referencia,
+          'nombre_archivo' => $file->getClientOriginalName(),
+          'ruta_storage'   => $ruta,
+          'formato'        => strtolower($file->getClientOriginalExtension()) ?: 'pdf',
+          'tamano_bytes'   => $file->getSize(),
+        ]);
+      }
+
       DB::commit();
-      return redirect()->route('referencias.index')->with('success', 'Referencia guardada correctamente.');
+      return redirect()->route('referencias.index')->with('success', 'Referencia y archivo guardados correctamente en tu colección.');
     } catch (\Exception $e) {
       DB::rollBack();
+      // Opcional: Eliminar el archivo físico si la transacción de BD falla después de subirlo
+      if (isset($ruta) && Storage::disk('local')->exists($ruta)) {
+        Storage::disk('local')->delete($ruta);
+      }
       throw $e;
     }
   }
-
-  /* 
-  INSERT INTO referencias (
-    id_tipo_referencia, id_usuario, id_editorial, titulo, 
-    anio_publicacion, isbn_issn, resumen
-    ) VALUES (1, 5, 2, 'Clean Code', 2008, '978-0132350884', 'A handbook of agile software craftsmanship.');
-
-    INSERT INTO referencia_autor (id_referencia, id_autor, orden) 
-      VALUES (LAST_INSERT_ID(), 3, 1);
-  */
 
   public function destroy($id): RedirectResponse
   {
@@ -248,13 +225,13 @@ class ReferenciaController extends Controller
     }
   }
 
-  /* 
-    DELETE FROM referencias WHERE id_referencia = 10;
-  */
-
   public function update(Request $request, $id): RedirectResponse
   {
     $referencia = Referencia::findOrFail($id);
+
+    if ($referencia->id_usuario !== Auth::id()) {
+      abort(403, 'No tienes permisos para modificar esta referencia.');
+    }
 
     $validated = $request->validate([
       'titulo'             => 'required|string|max:255',
@@ -268,7 +245,12 @@ class ReferenciaController extends Controller
       'autores_text'       => 'required|string',
       'temas_text'         => 'nullable|string',
       'isbn_issn'          => 'nullable|string|max:20',
-      'doi'                => 'nullable|string|max:100|unique:referencias,doi,' . $id . ',id_referencia',
+      'doi'                => [
+        'nullable',
+        'string',
+        'max:100',
+        Rule::unique('referencias', 'doi')->ignore($id, 'id_referencia')
+      ],
       'url'                => 'nullable|url|max:500',
       'resumen'            => 'nullable|string',
       'materias'           => 'required|array|min:1',
@@ -284,18 +266,18 @@ class ReferenciaController extends Controller
       }
 
       $referencia->update([
-        'titulo' => $validated['titulo'],
+        'titulo'             => $validated['titulo'],
         'id_tipo_referencia' => $validated['id_tipo_referencia'],
-        'anio_publicacion' => $validated['anio_publicacion'],
-        'fecha_exacta' => $validated['fecha_exacta'] ?? null,
-        'id_editorial' => $id_editorial,
-        'volumen' => $validated['volumen'] ?? null,
-        'numero' => $validated['numero'] ?? null,
-        'paginas' => $validated['paginas'] ?? null,
-        'isbn_issn' => $validated['isbn_issn'] ?? null,
-        'doi' => $validated['doi'] ?? null,
-        'url' => $validated['url'] ?? null,
-        'resumen' => $validated['resumen'] ?? null,
+        'anio_publicacion'   => $validated['anio_publicacion'],
+        'fecha_exacta'       => $validated['fecha_exacta'] ?? null,
+        'id_editorial'       => $id_editorial,
+        'volumen'            => $validated['volumen'] ?? null,
+        'numero'             => $validated['numero'] ?? null,
+        'paginas'            => $validated['paginas'] ?? null,
+        'isbn_issn'          => $validated['isbn_issn'] ?? null,
+        'doi'                => $validated['doi'] ?? null,
+        'url'                => $validated['url'] ?? null,
+        'resumen'            => $validated['resumen'] ?? null,
       ]);
 
       $autoresArray = array_filter(array_map('trim', explode(',', $request->autores_text)));
@@ -311,7 +293,7 @@ class ReferenciaController extends Controller
 
         $autor = Autor::firstOrCreate([
           'apellidos' => $apellidos,
-          'nombre' => $nombre
+          'nombre'    => $nombre
         ]);
 
         if (!in_array($autor->id_autor, $autoresVinculados)) {
@@ -347,11 +329,4 @@ class ReferenciaController extends Controller
       throw $e;
     }
   }
-
-  /* 
-    UPDATE referencias 
-      SET titulo = 'Clean Code: Revised Edition', 
-          anio_publicacion = 2009 
-      WHERE id_referencia = 10;
-  */
 }

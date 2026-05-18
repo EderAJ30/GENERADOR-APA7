@@ -1,19 +1,15 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * Class Usuario
- * 
- * @property int $id_usuario
+ * * @property int $id_usuario
  * @property string $nombre_usuario
  * @property string $paterno_usuario
  * @property string $materno_usuario
@@ -24,51 +20,56 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $rol_id
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * 
- * @property Role|null $role
- * @property Collection|Coleccione[] $colecciones
+ * * @property Rol|null $role
+ * @property Collection|Coleccion[] $colecciones
  * @property Collection|Referencia[] $referencias
  *
  * @package App\Models
  */
-class Usuario extends Model
+class Usuario extends Authenticatable
 {
-	protected $table = 'usuarios';
-	protected $primaryKey = 'id_usuario';
+  use Notifiable;
 
-	protected $casts = [
-		'estatus' => 'bool',
-		'rol_id' => 'int'
-	];
+  protected $table = 'usuarios';
+  protected $primaryKey = 'id_usuario';
 
-	protected $hidden = [
-		'remember_token',
-		'password'
-	];
+  protected $hidden = [
+    'remember_token',
+    'password'
+  ];
 
-	protected $fillable = [
-		'nombre_usuario',
-		'paterno_usuario',
-		'materno_usuario',
-		'email',
-		'remember_token',
-		'estatus',
-		'password',
-		'rol_id'
-	];
+  protected $fillable = [
+    'nombre_usuario',
+    'paterno_usuario',
+    'materno_usuario',
+    'email',
+    'remember_token',
+    'estatus',
+    'password',
+    'rol_id'
+  ];
 
-	public function role()
-	{
-		return $this->belongsTo(Role::class, 'rol_id');
-	}
+  protected function casts(): array
+  {
+    return [
+      'estatus'  => 'bool',
+      'rol_id'   => 'int',
+      'password' => 'hashed',
+    ];
+  }
 
-	public function colecciones()
-	{
-		return $this->hasMany(Coleccione::class, 'id_usuario');
-	}
+  public function role()
+  {
+    return $this->belongsTo(Rol::class, 'rol_id');
+  }
 
-	public function referencias()
-	{
-		return $this->hasMany(Referencia::class, 'id_usuario');
-	}
+  public function colecciones()
+  {
+    return $this->hasMany(Coleccion::class, 'id_usuario');
+  }
+
+  public function referencias()
+  {
+    return $this->hasMany(Referencia::class, 'id_usuario');
+  }
 }

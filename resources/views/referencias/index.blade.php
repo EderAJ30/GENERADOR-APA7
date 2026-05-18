@@ -177,7 +177,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
-
+              @if(Auth::user()->rol_id === 1 || (Auth::user()->role && Auth::user()->role->nombre === 'administrador'))
               <button onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')" class="p-2 bg-white/5 hover:bg-white/10 text-slate-400 rounded-lg transition border border-white/10" title="Editar">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -189,6 +189,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
+              @endif
 
             </td>
           </tr>
@@ -231,7 +232,7 @@
       </div>
       @endif
 
-      <form id="form-create-referencia" action="{{ route('referencias.store') }}" method="POST" class="space-y-8">
+      <form id="form-create-referencia" action="{{ route('referencias.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
         @csrf
 
         <div>
@@ -324,7 +325,24 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">Resumen / Abstract</label>
+          <h4 class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Archivo y Colección Personal</h4>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+
+            <div class="md:col-span-6">
+              <label class="block text-sm font-medium text-slate-300 mb-1">Documento Adjunto <span class="text-xs text-slate-500">(PDF, Máx 20MB)</span></label>
+              <input type="file" name="archivo" accept="application/pdf" class="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-white focus:border-blue-500 transition file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 cursor-pointer">
+            </div>
+
+            <div class="md:col-span-6">
+              <label class="block text-sm font-medium text-slate-300 mb-1">Nota Personal <span class="text-xs text-slate-500">(Visible solo en tu dashboard)</span></label>
+              <input type="text" name="comentario_personal" value="{{ old('comentario_personal') }}" placeholder="Ej. Ideal para el marco teórico..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-1">Resumen</label>
           <textarea name="resumen" rows="3" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition resize-none">{{ old('resumen') }}</textarea>
         </div>
 

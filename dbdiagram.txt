@@ -129,3 +129,120 @@ Table colecciones {
   fecha_agregado timestamp [not null]
   comentario_personal text [null]
 }
+
+@extends('layouts.app')
+
+@section('content')
+
+<div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[150px] pointer-events-none"></div>
+<div class="absolute bottom-10 left-10 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[130px] pointer-events-none"></div>
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-white/5">
+    <div>
+      <h2 class="text-3xl font-black tracking-tight text-white">Mi Colección de Referencias</h2>
+      <p class="text-slate-400 text-sm mt-1">
+        Hola, <span class="text-blue-400 font-medium">{{ Auth::user()->nombre_usuario }}</span> • Gestiona tu biblioteca personal
+      </p>
+    </div>
+
+    <form action="{{ route('logout') }}" method="POST" class="m-0">
+      @csrf
+      <button type="submit" class="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition active:scale-[0.98]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Cerrar Sesión
+      </button>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @forelse($colecciones as $coleccion)
+    <div class="group relative flex flex-col">
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-0 group-hover:opacity-15 transition duration-500"></div>
+
+      <div class="relative flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+
+        <div>
+          <div class="flex justify-between items-start gap-4 mb-3">
+            <span class="inline-block bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+              {{ $coleccion->referencia->tipo_referencia->nombre ?? 'N/D' }}
+            </span>
+            <span class="text-slate-500 text-xs font-medium">
+              {{ \Carbon\Carbon::parse($coleccion->fecha_agregado)->format('d/m/Y') }}
+            </span>
+          </div>
+
+          <h3 class="text-base font-bold text-slate-100 tracking-tight leading-snug line-clamp-2" title="{{ $coleccion->referencia->titulo }}">
+            {{ $coleccion->referencia->titulo }}
+          </h3>
+
+          <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+            @php
+            $autores = $coleccion->referencia->referencia_autores->sortBy('orden')->map(function($ra) {
+            return $ra->autor->apellidos . ', ' . substr($ra->autor->nombre, 0, 1) . '.';
+            })->implode('; ');
+            @endphp
+            <span class="text-slate-300 font-medium">{{ $autores ?: 'Sin autor registrado' }}</span>
+            <span class="mx-1.5 text-slate-600">•</span>
+            <span>{{ $coleccion->referencia->anio_publicacion }}</span>
+          </p>
+
+          @if($coleccion->comentario_personal)
+          <div class="mt-4 p-3 bg-amber-500/5 border border-amber-500/10 text-amber-300/90 rounded-xl text-xs leading-relaxed">
+            <span class="font-bold text-amber-400 uppercase text-[9px] tracking-wider block mb-0.5">Mi nota personal:</span>
+            {{ $coleccion->comentario_personal }}
+          </div>
+          @endif
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/5">
+          @if($coleccion->referencia->archivos->isNotEmpty())
+          @foreach($coleccion->referencia->archivos as $archivo)
+          <a href="{{ route('archivo.descargar', $archivo->id_archivo) }}"
+            class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-3 px-4 rounded-xl transition shadow-lg shadow-blue-600/10 hover:shadow-blue-500/30 border border-blue-500/20 active:scale-[0.99]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Visualizar Documento ({{ strtoupper($archivo->formato) }})
+          </a>
+          @endforeach
+          @else
+          <button type="button" disabled
+            class="w-full flex items-center justify-center gap-2 bg-black/20 border border-white/5 text-slate-600 text-xs font-semibold py-3 px-4 rounded-xl cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            Sin Archivo Adjunto
+          </button>
+          @endif
+        </div>
+
+      </div>
+    </div>
+    @empty
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-white/5 border border-white/10 rounded-2xl p-12 text-center backdrop-blur-xl">
+      <svg class="w-12 h-12 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+      <h4 class="text-xl font-bold text-slate-200">Tu colección está vacía</h4>
+      <p class="text-slate-400 text-sm mt-2 max-w-sm mx-auto">Explora el catálogo público para agregar referencias de investigación a tu biblioteca.</p>
+      <a href="{{ route('referencias.index') }}" class="inline-block mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-xs font-bold uppercase tracking-wider rounded-xl transition shadow-lg shadow-blue-600/20">
+        Ir al Catálogo
+      </a>
+    </div>
+    @endforelse
+  </div>
+
+  <div class="mt-8 pt-4 border-t border-white/5">
+    {{ $colecciones->links() }}
+  </div>
+
+</main>
+
+</body>
+
+</html>
+@endsection

@@ -13,10 +13,33 @@
   <nav class="sticky top-0 z-50 bg-white/5 backdrop-blur-md border-b border-white/10 shadow-2xl">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
-        <span class="text-xl font-black tracking-tighter text-white">
+        <a href="{{ route('referencias.index') }}" class="text-xl font-black tracking-tighter text-white hover:text-gray-200 transition">
           REFERENCIAS<span class="text-blue-500">ICO</span>
-        </span>
+        </a>
+
         <div class="flex items-center gap-6 text-sm font-medium">
+          <a href="{{ route('referencias.index') }}" class="text-slate-300 hover:text-white transition">
+            Inicio
+          </a>
+
+          @auth
+          @auth
+          <a href="{{ route('dashboard') }}"
+            title="Ir a mi Dashboard"
+            class="relative flex items-center justify-center h-10 px-4 rounded-full bg-blue-500/10 hover:bg-blue-500/20 backdrop-blur-md border border-blue-500/30 hover:border-blue-500/50 shadow-lg shadow-blue-500/10 transition duration-300 active:scale-95 group">
+
+            <div class="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition duration-300 pointer-events-none"></div>
+
+            <span class="text-xs font-black tracking-wider text-blue-400 group-hover:text-blue-300 transition-colors uppercase select-none">
+              {{ explode(' ', trim(Auth::user()->nombre_usuario))[0] }}
+            </span>
+          </a>
+          @endauth
+          @else
+          <a href="{{ route('login') }}" class="text-slate-300 hover:text-white transition">
+            Iniciar Sesión
+          </a>
+          @endauth
         </div>
       </div>
     </div>
