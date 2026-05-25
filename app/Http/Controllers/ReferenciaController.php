@@ -53,12 +53,15 @@ class ReferenciaController extends Controller
 
     $referencias = $query->paginate(8)->appends(['search' => $search]);
 
+    // ✅ MODIFICACIÓN AQUÍ: Filtramos duplicados usando unique() en las colecciones
     $catalogos = [
       'tipos'       => TiposReferencia::all(),
-      'autores'     => Autor::orderBy('apellidos')->get(),
-      'editoriales' => Editorial::orderBy('nombre')->get(),
-      'materias'    => Materia::orderBy('nombre')->get(),
-      'temas'       => Tema::orderBy('nombre')->get(),
+      'autores'     => Autor::orderBy('apellidos')->get()->unique(function ($autor) {
+                         return trim($autor->nombre . ' ' . $autor->apellidos);
+                       }),
+      'editoriales' => Editorial::orderBy('nombre')->get()->unique('nombre'),
+      'materias'    => Materia::orderBy('nombre')->get()->unique('nombre'),
+      'temas'       => Tema::orderBy('nombre')->get()->unique('nombre'),
     ];
 
     return view('referencias.index', compact('referencias', 'catalogos', 'search'));
@@ -83,8 +86,7 @@ class ReferenciaController extends Controller
       'resumen'             => 'nullable|string',
       'materias'            => 'required|array|min:1',
       'materias.*'          => 'integer|exists:materias,id_materia',
-      // Nuevas validaciones
-      'archivo'             => 'nullable|file|mimes:pdf|max:20480', // Máximo 20MB
+      'archivo'             => 'nullable|file|mimes:pdf|max:20480',
       'comentario_personal' => 'nullable|string|max:1000',
     ]);
 
@@ -114,7 +116,6 @@ class ReferenciaController extends Controller
         'id_usuario'         => $validated['id_usuario'],
       ]);
 
-      // ... [Lógica intacta de autores, temas y materias] ...
       $autoresArray = array_filter(array_map('trim', explode(',', $request->autores_text)));
       $autoresVinculados = [];
       $ordenAPA = 1;
@@ -153,20 +154,14 @@ class ReferenciaController extends Controller
 
       $referencia->materias()->syncWithPivotValues($request->materias, ['tipo_bibliografia' => 'basica']);
 
-      // --- NUEVA LÓGICA: Colección y Archivos ---
-
-      // 1. Vincular a la colección personal del usuario creador
       Coleccion::create([
         'id_usuario'          => $validated['id_usuario'],
         'id_referencia'       => $referencia->id_referencia,
         'comentario_personal' => $validated['comentario_personal'] ?? null,
       ]);
 
-      // 2. Procesar y almacenar el archivo de forma segura
       if ($request->hasFile('archivo') && $request->file('archivo')->isValid()) {
         $file = $request->file('archivo');
-
-        // Se almacena en 'storage/app/referencias_archivos' (aislado de acceso público directo)
         $ruta = $file->store('referencias_archivos', 'local');
 
         Archivo::create([
@@ -182,7 +177,6 @@ class ReferenciaController extends Controller
       return redirect()->route('referencias.index')->with('success', 'Referencia y archivo guardados correctamente en tu colección.');
     } catch (\Exception $e) {
       DB::rollBack();
-      // Opcional: Eliminar el archivo físico si la transacción de BD falla después de subirlo
       if (isset($ruta) && Storage::disk('local')->exists($ruta)) {
         Storage::disk('local')->delete($ruta);
       }
@@ -203,8 +197,10 @@ class ReferenciaController extends Controller
       ReferenciaAutor::where('id_referencia', $id)->delete();
 
       foreach ($referencia->archivos as $archivo) {
-        if (Storage::disk('public')->exists($archivo->ruta)) {
-          Storage::disk('public')->delete($archivo->ruta);
+        if (!empty($archivo->ruta_storage)) {
+          if (Storage::disk('local')->exists($archivo->ruta_storage)) {
+            Storage::disk('local')->delete($archivo->ruta_storage);
+          }
         }
         $archivo->delete();
       }

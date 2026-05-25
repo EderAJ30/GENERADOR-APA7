@@ -2,7 +2,6 @@
 
 @section('content')
 
-<!-- Notificación de Éxito -->
 @if(session('success'))
 <div class="mb-6 p-4 bg-green-500/10 border border-green-500/50 rounded-xl flex items-center justify-between">
   <div class="flex items-center gap-3">
@@ -17,7 +16,6 @@
 </div>
 @endif
 
-<!-- Notificación de Error -->
 @if($errors->has('error'))
 <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center justify-between">
   <div class="flex items-center gap-3">
@@ -63,6 +61,11 @@
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     @forelse($colecciones as $coleccion)
     @php $ref = $coleccion->referencia; @endphp
+    
+    @if(!$ref)
+        @continue
+    @endif
+
     <div class="group relative flex flex-col">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-0 group-hover:opacity-15 transition duration-500"></div>
 
@@ -78,8 +81,8 @@
             </span>
           </div>
 
-          <h3 class="text-base font-bold text-slate-100 tracking-tight leading-snug line-clamp-2" title="{{ $ref->titulo }}">
-            {{ $ref->titulo }}
+          <h3 class="text-base font-bold text-slate-100 tracking-tight leading-snug line-clamp-2" title="{{ $ref->titulo ?? 'Sin título' }}">
+            {{ $ref->titulo ?? 'Sin título' }}
           </h3>
 
           <p class="text-xs text-slate-400 mt-2 line-clamp-2">
@@ -90,7 +93,7 @@
             @endphp
             <span class="text-slate-300 font-medium">{{ $autores ?: 'Sin autor registrado' }}</span>
             <span class="mx-1.5 text-slate-600">•</span>
-            <span>{{ $ref->anio_publicacion }}</span>
+            <span>{{ $ref->anio_publicacion ?? 'N/D' }}</span>
           </p>
 
           @if($coleccion->comentario_personal)
@@ -152,165 +155,14 @@
       </div>
     </div>
 
-    <!-- MODAL DE CREACIÓN de referenciaxd -->
-    <div id="modal-create" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 sm:p-6">
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="toggleModal('modal-create')"></div>
-
-      <div class="relative w-full max-w-4xl bg-[#0a0a0f] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-
-        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
-          <h3 class="text-2xl font-bold text-white">Añadir Nueva Referencia</h3>
-          <button type="button" onclick="toggleModal('modal-create')" class="text-slate-400 hover:text-white transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-
-        <div class="p-6 overflow-y-auto custom-scrollbar">
-          @if ($errors->any())
-          <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm">
-            <ul class="list-disc pl-5 space-y-1">
-              @foreach ($errors->all() as $error)
-              <li>{{ $error }}</li>
-              @endforeach
-            </ul>
-          </div>
-          @endif
-
-          <form id="form-create-referencia" action="{{ route('referencias.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
-            @csrf
-
-            <div>
-              <h4 class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Información Principal</h4>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-                <div class="md:col-span-12">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Título de la Referencia <span class="text-blue-500">*</span></label>
-                  <input type="text" name="titulo" value="{{ old('titulo') }}" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-
-                <div class="md:col-span-12">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Autor(es) <span class="text-xs text-slate-500">(Separar por comas)</span> <span class="text-blue-500">*</span></label>
-                  <input type="text" name="autores_text" value="{{ old('autores_text') }}" placeholder="Ej. Pressman Roger, Sommerville Ian" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-
-                <div class="md:col-span-4">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Tipo de Fuente <span class="text-blue-500">*</span></label>
-                  <select name="id_tipo_referencia" required class="tom-select-single" placeholder="Seleccionar...">
-                    <option value="" disabled {{ old('id_tipo_referencia') ? '' : 'selected' }}></option>
-                    @foreach($catalogos['tipos'] as $tipo)
-                    <option value="{{ $tipo->id_tipo_referencia }}" {{ old('id_tipo_referencia') == $tipo->id_tipo_referencia ? 'selected' : '' }}>{{ $tipo->nombre }}</option>
-                    @endforeach
-                  </select>
-                </div>
-
-                <div class="md:col-span-4">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Año <span class="text-blue-500">*</span></label>
-                  <input type="number" name="anio_publicacion" value="{{ old('anio_publicacion', date('Y')) }}" required min="1500" max="2100" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-
-                <div class="md:col-span-4">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Fecha de Consulta/Exacta</label>
-                  <input type="date" name="fecha_exacta" value="{{ old('fecha_exacta') }}" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-slate-300 focus:border-blue-500 transition style-color-scheme-dark">
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Detalles de Publicación</h4>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-                <div class="md:col-span-3">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Volumen</label>
-                  <input type="text" name="volumen" value="{{ old('volumen') }}" placeholder="Ej. 12" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-                <div class="md:col-span-3">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Número</label>
-                  <input type="text" name="numero" value="{{ old('numero') }}" placeholder="Ej. 4" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-                <div class="md:col-span-3">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Páginas</label>
-                  <input type="text" name="paginas" value="{{ old('paginas') }}" placeholder="Ej. 100-125" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-
-                <div class="md:col-span-3">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Editorial / Inst.</label>
-                  <input type="text" name="editorial" value="{{ old('editorial') }}" placeholder="Ej. McGraw Hill" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Clasificación e Identificadores</h4>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-                <div class="md:col-span-4">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">ISBN / ISSN</label>
-                  <input type="text" name="isbn_issn" value="{{ old('isbn_issn') }}" placeholder="Ej. 978-3..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-                <div class="md:col-span-8">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">DOI / Enlace (URL)</label>
-                  <div class="flex gap-3">
-                    <input type="text" name="doi" value="{{ old('doi') }}" placeholder="DOI: 10.1000/182" class="w-1/3 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                    <input type="url" name="url" value="{{ old('url') }}" placeholder="URL: https://..." class="w-2/3 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                  </div>
-                </div>
-
-                <div class="md:col-span-6">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Materia(s) <span class="text-blue-500">*</span></label>
-                  <select name="materias[]" multiple required class="tom-select-multiple" placeholder="Buscar materias...">
-                    @foreach($catalogos['materias'] as $materia)
-                    <option value="{{ $materia->id_materia }}" {{ in_array($materia->id_materia, old('materias', [])) ? 'selected' : '' }}>{{ $materia->nombre }}</option>
-                    @endforeach
-                  </select>
-                </div>
-
-                <div class="md:col-span-6">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Tema(s) <span class="text-xs text-slate-500">(Separar por comas)</span></label>
-                  <input type="text" name="temas_text" value="{{ old('temas_text') }}" placeholder="Ej. Redes, Ciberseguridad, IoT" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 class="text-blue-400 text-sm font-bold uppercase tracking-wider mb-4 border-b border-white/5 pb-2">Archivo y Colección Personal</h4>
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-
-                <div class="md:col-span-6">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Documento Adjunto <span class="text-xs text-slate-500">(PDF, Máx 20MB)</span></label>
-                  <input type="file" name="archivo" accept="application/pdf" class="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-white focus:border-blue-500 transition file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 cursor-pointer">
-                </div>
-
-                <div class="md:col-span-6">
-                  <label class="block text-sm font-medium text-slate-300 mb-1">Nota Personal <span class="text-xs text-slate-500">(Visible solo en tu dashboard)</span></label>
-                  <input type="text" name="comentario_personal" value="{{ old('comentario_personal') }}" placeholder="Ej. Ideal para el marco teórico..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition">
-                </div>
-
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1">Resumen</label>
-              <textarea name="resumen" rows="3" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition resize-none">{{ old('resumen') }}</textarea>
-            </div>
-
-          </form>
-        </div>
-
-        <div class="p-6 border-t border-white/10 bg-white/5 shrink-0 flex justify-end gap-3">
-          <button type="button" onclick="toggleModal('modal-create')" class="px-6 py-2.5 text-slate-300 bg-black/50 hover:bg-black border border-white/10 rounded-xl transition">Cancelar</button>
-          <button type="submit" form="form-create-referencia" class="px-6 py-2.5 text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] transition">Guardar Referencia</button>
-        </div>
-      </div>
-    </div>
-
     <div id="modal-view-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')"></div>
 
       <div class="relative w-full max-w-3xl bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        <!-- Header -->
         <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
           <div>
-            <h3 class="text-xl font-bold text-white leading-tight">{{ $ref->titulo }}</h3>
-            <p class="text-blue-400 text-[10px] mt-1 uppercase tracking-widest font-bold">{{ $ref->tipo_referencia->nombre }}</p>
+            <h3 class="text-xl font-bold text-white leading-tight">{{ $ref->titulo ?? 'Sin título' }}</h3>
+            <p class="text-blue-400 text-[10px] mt-1 uppercase tracking-widest font-bold">{{ $ref->tipo_referencia->nombre ?? 'N/D' }}</p>
           </div>
           <button onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')" class="text-slate-400 hover:text-white transition p-2">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,7 +171,6 @@
           </button>
         </div>
 
-        <!-- Cuerpo con Scroll -->
         <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
           @php
           $autores = $ref->referencia_autores->sortBy('orden')->values();
@@ -353,9 +204,9 @@
             </div>
             <div id="apa-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
               @if($tipoSlug === 'libro')
-              {{ $autoresAPA }} ({{ $ref->anio_publicacion }}). <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }} {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
+              {{ $autoresAPA }} ({{ $ref->anio_publicacion ?? 'N/D' }}). <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }} {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
               @else
-              {{ $autoresAPA }} ({{ $ref->anio_publicacion }}). {{ $ref->titulo ?? '[Título no disponible]' }}. <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista no especificada]' }}</span>{!! $ref->volumen ? ', <span class="italic">'.$ref->volumen.'</span>' : '' !!}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', ' . $ref->paginas : '' }}. {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
+              {{ $autoresAPA }} ({{ $ref->anio_publicacion ?? 'N/D' }}). {{ $ref->titulo ?? '[Título no disponible]' }}. <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista no especificada]' }}</span>{!! $ref->volumen ? ', <span class="italic">'.$ref->volumen.'</span>' : '' !!}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', ' . $ref->paginas : '' }}. {{ $ref->doi ? 'https://doi.org/'.$ref->doi : $ref->url }}
               @endif
             </div>
           </div>
@@ -367,9 +218,9 @@
             </div>
             <div id="ieee-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
               @if($tipoSlug === 'libro')
-              {{ $autoresIEEE }}, <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
+              {{ $autoresIEEE }}, <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion ?? 'N/D' }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
               @else
-              {{ $autoresIEEE }}, "{{ $ref->titulo ?? '[Título no disponible]' }}," <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', vol. ' . $ref->volumen : '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}, {{ $ref->anio_publicacion }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
+              {{ $autoresIEEE }}, "{{ $ref->titulo ?? '[Título no disponible]' }}," <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', vol. ' . $ref->volumen : '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}, {{ $ref->anio_publicacion ?? 'N/D' }}. [Online]. Available: {{ $ref->url ?? 'https://doi.org/'.$ref->doi }}
               @endif
             </div>
           </div>
@@ -381,9 +232,9 @@
             </div>
             <div id="chicago-{{ $ref->id_referencia }}" class="p-4 bg-white/5 border border-white/5 rounded-xl text-slate-200 text-sm leading-relaxed">
               @if($tipoSlug === 'libro')
-              {{ $autoresAPA }}. <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion }}.
+              {{ $autoresAPA }}. <span class="italic text-white">{{ $ref->titulo ?? '[Título no disponible]' }}</span>. {{ $ref->editorial ? $ref->editorial->nombre . ', ' : '' }}{{ $ref->anio_publicacion ?? 'N/D' }}.
               @else
-              {{ $autoresAPA }}. "{{ $ref->titulo ?? '[Título no disponible]' }}." <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span> {{ $ref->volumen ?? '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }} ({{ $ref->anio_publicacion }}){{ $ref->paginas ? ': ' . $ref->paginas : '' }}.
+              {{ $autoresAPA }}. "{{ $ref->titulo ?? '[Título no disponible]' }}." <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span> {{ $ref->volumen ?? '' }}{{ $ref->numero ? ', no. ' . $ref->numero : '' }} ({{ $ref->anio_publicacion ?? 'N/D' }}){{ $ref->paginas ? ': ' . $ref->paginas : '' }}.
               @endif
             </div>
           </div>
@@ -400,15 +251,14 @@
               $inicialHarvard = isset($primerAutor->autor->nombre) ? substr($primerAutor->autor->nombre, 0, 1) . '.' : '';
               @endphp
               @if($tipoSlug === 'libro')
-              {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion }}) <span class="italic text-white">'{{ $ref->titulo }}'</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }}
+              {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion ?? 'N/D' }}) <span class="italic text-white">'{{ $ref->titulo ?? 'Sin título' }}'</span>. {{ $ref->editorial ? $ref->editorial->nombre . '.' : '' }}
               @else
-              {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion }}) '{{ $ref->titulo }}', <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', ' . $ref->volumen : '' }}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}.
+              {{ $apellidoHarvard }}, {{ $inicialHarvard }} ({{ $ref->anio_publicacion ?? 'N/D' }}) '{{ $ref->titulo ?? 'Sin título' }}', <span class="italic text-white">{{ $ref->editorial->nombre ?? '[Revista]' }}</span>{{ $ref->volumen ? ', ' . $ref->volumen : '' }}{{ $ref->numero ? '(' . $ref->numero . ')' : '' }}{{ $ref->paginas ? ', pp. ' . $ref->paginas : '' }}.
               @endif
             </div>
           </div>
         </div>
 
-        <!-- Footer -->
         <div class="p-6 border-t border-white/10 bg-white/5 rounded-b-2xl flex justify-end shrink-0">
           <button onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')" class="px-8 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition border border-white/10">Cerrar</button>
         </div>
@@ -430,7 +280,6 @@
         <div class="flex justify-center gap-3">
           <button onclick="toggleModal('modal-delete-{{ $ref->id_referencia }}')" class="flex-1 px-4 py-3 text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition">Cancelar</button>
 
-          <!-- Formulario que ejecuta el DELETE en Laravel -->
           <form action="{{ route('referencias.destroy', $ref->id_referencia) }}" method="POST" class="flex-1">
             @csrf
             @method('DELETE')

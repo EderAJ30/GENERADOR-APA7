@@ -50,7 +50,6 @@
   }
 </style>
 
-<!-- Notificación de Éxito -->
 @if(session('success'))
 <div class="mb-6 p-4 bg-green-500/10 border border-green-500/50 rounded-xl flex items-center justify-between">
   <div class="flex items-center gap-3">
@@ -65,7 +64,6 @@
 </div>
 @endif
 
-<!-- Notificación de Error -->
 @if($errors->has('error'))
 <div class="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center justify-between">
   <div class="flex items-center gap-3">
@@ -122,7 +120,6 @@
           <tr class="hover:bg-white/5 transition duration-200">
             <td class="p-5 max-w-xl">
               <div class="leading-relaxed">
-                <!-- APA 7 Preview -->
                 <span class="text-blue-300 font-medium">
                   @php
                   $autoresPreview = $ref->referencia_autores->sortBy('orden')->values();
@@ -206,7 +203,6 @@
   </div>
 </div>
 
-<!-- MODAL DE CREACIÓN de referenciaxd -->
 <div id="modal-create" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 sm:p-6">
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="toggleModal('modal-create')"></div>
 
@@ -356,17 +352,12 @@
   </div>
 </div>
 
-<!-- FIN DE LA TABLA -->
-
-<!-- ZONA DE MODALES -->
 @foreach($referencias as $ref)
 
-<!-- MODAL DE CITACIÓN -->
 <div id="modal-view-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')"></div>
 
   <div class="relative w-full max-w-3xl bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-    <!-- Header -->
     <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
       <div>
         <h3 class="text-xl font-bold text-white leading-tight">{{ $ref->titulo }}</h3>
@@ -379,7 +370,6 @@
       </button>
     </div>
 
-    <!-- Cuerpo con Scroll -->
     <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
       @php
       $autores = $ref->referencia_autores->sortBy('orden')->values();
@@ -468,14 +458,12 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="p-6 border-t border-white/10 bg-white/5 rounded-b-2xl flex justify-end shrink-0">
       <button onclick="toggleModal('modal-view-{{ $ref->id_referencia }}')" class="px-8 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition border border-white/10">Cerrar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL DE ELIMINAR (Con Formulario Activo) -->
 <div id="modal-delete-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="toggleModal('modal-delete-{{ $ref->id_referencia }}')"></div>
 
@@ -491,7 +479,6 @@
     <div class="flex justify-center gap-3">
       <button onclick="toggleModal('modal-delete-{{ $ref->id_referencia }}')" class="flex-1 px-4 py-3 text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition">Cancelar</button>
 
-      <!-- Formulario que ejecuta el DELETE en Laravel -->
       <form action="{{ route('referencias.destroy', $ref->id_referencia) }}" method="POST" class="flex-1">
         @csrf
         @method('DELETE')
@@ -501,7 +488,6 @@
   </div>
 </div>
 
-<!-- MODAL DE EDICIÓN -->
 <div id="modal-edit-{{ $ref->id_referencia }}" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="toggleModal('modal-edit-{{ $ref->id_referencia }}')"></div>
 
@@ -652,6 +638,13 @@
       console.error('Error al copiar: ', err);
     });
   }
+
+  // NUEVO: Auto-abrir el modal si hay errores de validación
+  document.addEventListener('DOMContentLoaded', function() {
+      @if($errors->any() && !$errors->has('error'))
+          toggleModal('modal-create');
+      @endif
+  });
 </script>
 
 @endsection
