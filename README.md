@@ -131,3 +131,4 @@ docker compose exec app npm run build
 ---
 
 ---
+# GENERADOR-APA7-ICO
